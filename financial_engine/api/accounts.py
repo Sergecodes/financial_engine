@@ -46,9 +46,43 @@ transaction_list_model = api.model("TransactionList", {
     "total": fields.Integer(description="Total items"),
 })
 
+account_list_model = api.model("AccountList", {
+    "accounts": fields.List(fields.Nested(account_model)),
+    "page": fields.Integer(description="Current page"),
+    "per_page": fields.Integer(description="Items per page"),
+    "total": fields.Integer(description="Total accounts"),
+})
+
 
 @api.route("")
 class AccountList(Resource):
+    @api.marshal_with(account_list_model)
+    @api.doc(params={
+        "page": "Page number (default: 1)",
+        "per_page": "Items per page (default: 20, max: 100)",
+        "user_id": "Filter by user ID (optional)",
+    })
+    def get(self):
+        """List accounts (paginated)."""
+        page = request.args.get("page", 1, type=int)
+        per_page = min(request.args.get("per_page", 20, type=int), 100)
+        user_id = request.args.get("user_id")
+
+        query = Account.query
+        if user_id:
+            query = query.filter_by(user_id=user_id)
+
+        pagination = query.order_by(Account.created_at.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+
+        return {
+            "accounts": pagination.items,
+            "page": page,
+            "per_page": per_page,
+            "total": pagination.total,
+        }
+
     @api.expect(account_create_model)
     @api.marshal_with(account_model, code=201)
     @api.response(201, "Account created")
