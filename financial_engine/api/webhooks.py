@@ -5,6 +5,7 @@ from flask_restx import Namespace, Resource, fields
 
 from financial_engine.services.deposit_service import DepositService
 from financial_engine.services.payment_provider import PaymentProviderStub
+from financial_engine.middleware.idempotency import idempotent
 from financial_engine.domain.exceptions import (
     TransactionNotFoundError,
     InvalidTransactionStateError,
@@ -25,10 +26,12 @@ webhook_model = api.model("WebhookPayload", {
 @api.route("/webhook")
 class PaymentWebhook(Resource):
     @api.expect(webhook_model)
+    @api.doc(params={"Idempotency-Key": {"in": "header", "description": "Unique key to ensure idempotent processing", "required": False}})
     @api.response(200, "Deposit confirmed")
     @api.response(400, "Invalid payload")
     @api.response(401, "Webhook verification failed")
     @api.response(404, "Transaction not found")
+    @idempotent
     def post(self):
         """Handle payment provider webhook to confirm deposits."""
         data = request.json

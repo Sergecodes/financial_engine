@@ -48,6 +48,7 @@ def _resolve_account(number: str) -> Account:
 @api.route("")
 class TransferExecute(Resource):
     @api.expect(transfer_request_model)
+    @api.doc(params={"Idempotency-Key": {"in": "header", "description": "Unique key to ensure idempotent processing", "required": False}})
     @api.response(201, "Transfer completed", transfer_response_model)
     @api.response(400, "Validation error")
     @api.response(404, "Account not found")
@@ -93,6 +94,7 @@ class TransferExecute(Resource):
 @api.route("/initiate")
 class TransferInitiate(Resource):
     @api.expect(transfer_initiate_model)
+    @api.doc(params={"Idempotency-Key": {"in": "header", "description": "Unique key to ensure idempotent processing", "required": False}})
     @api.response(201, "Transfer initiated (funds reserved)", transfer_response_model)
     @api.response(400, "Validation error")
     @api.response(422, "Insufficient funds")
@@ -136,9 +138,11 @@ class TransferInitiate(Resource):
 
 @api.route("/<string:transaction_id>/commit")
 class TransferCommit(Resource):
+    @api.doc(params={"Idempotency-Key": {"in": "header", "description": "Unique key to ensure idempotent processing", "required": False}})
     @api.response(200, "Transfer committed", transfer_response_model)
     @api.response(404, "Transaction not found")
     @api.response(409, "Invalid state transition")
+    @idempotent
     def post(self, transaction_id):
         """Phase 2: Commit a pending two-phase transfer."""
         try:
@@ -161,9 +165,11 @@ class TransferCommit(Resource):
 
 @api.route("/<string:transaction_id>/fail")
 class TransferFail(Resource):
+    @api.doc(params={"Idempotency-Key": {"in": "header", "description": "Unique key to ensure idempotent processing", "required": False}})
     @api.response(200, "Transfer failed", transfer_response_model)
     @api.response(404, "Transaction not found")
     @api.response(409, "Invalid state transition")
+    @idempotent
     def post(self, transaction_id):
         """Fail a pending transfer and release reserved funds."""
         try:

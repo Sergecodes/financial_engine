@@ -1,6 +1,5 @@
 import uuid
 from decimal import Decimal
-from datetime import datetime, timezone
 
 from financial_engine.domain.value_objects import Money
 from financial_engine.extensions import db

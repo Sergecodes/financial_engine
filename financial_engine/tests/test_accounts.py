@@ -61,13 +61,15 @@ class TestAccounts:
         assert data["user_id"] == "test_user"
         assert data["currency"] == "USD"
 
-    def test_create_duplicate_account(self, client, alice_account):
-        """Creating duplicate user+currency account returns 409."""
+    def test_create_multiple_accounts_same_currency(self, client, alice_account):
+        """Creating multiple accounts for same user+currency is allowed."""
         resp = client.post("/api/v1/accounts", json={
             "user_id": "alice",
             "currency": "USD",
         })
-        assert resp.status_code == 409
+        assert resp.status_code == 201
+        data = resp.get_json()
+        assert data["number"] != alice_account
 
     def test_get_account(self, client, alice_account):
         """Retrieve account by account number."""

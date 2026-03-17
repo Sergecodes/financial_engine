@@ -31,6 +31,7 @@ deposit_response_model = api.model("DepositResponse", {
 @api.route("")
 class DepositCreate(Resource):
     @api.expect(deposit_request_model)
+    @api.doc(params={"Idempotency-Key": {"in": "header", "description": "Unique key to ensure idempotent processing", "required": False}})
     @api.response(201, "Deposit initiated", deposit_response_model)
     @api.response(400, "Validation error")
     @api.response(404, "Account not found")

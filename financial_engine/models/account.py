@@ -30,10 +30,6 @@ class Account(db.Model):
     ledger_entries = db.relationship("LedgerEntry", backref="account", lazy="dynamic")
     snapshots = db.relationship("BalanceSnapshot", backref="account", lazy="dynamic")
 
-    __table_args__ = (
-        db.UniqueConstraint("user_id", "currency", name="uq_user_currency"),
-    )
-
     @hybrid_property
     def currency(self):
         return self._currency

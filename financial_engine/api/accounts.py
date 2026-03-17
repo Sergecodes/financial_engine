@@ -6,6 +6,7 @@ from financial_engine.models.account import Account
 from financial_engine.models.transaction import Transaction
 from financial_engine.models.ledger_entry import LedgerEntry
 from financial_engine.services.balance_service import BalanceService
+from financial_engine.middleware.idempotency import idempotent
 
 api = Namespace("accounts", description="Account operations")
 
@@ -84,18 +85,15 @@ class AccountList(Resource):
         }
 
     @api.expect(account_create_model)
+    @api.doc(params={"Idempotency-Key": {"in": "header", "description": "Unique key to ensure idempotent processing", "required": False}})
     @api.marshal_with(account_model, code=201)
     @api.response(201, "Account created")
-    @api.response(409, "Account already exists")
+    @idempotent
     def post(self):
         """Create a new account."""
         data = request.json
         user_id = data["user_id"]
         currency = data["currency"].upper()
-
-        existing = Account.query.filter_by(user_id=user_id, currency=currency).first()
-        if existing:
-            api.abort(409, f"Account already exists for user {user_id} with currency {currency}")
 
         account = Account(user_id=user_id, currency=currency)
         db.session.add(account)

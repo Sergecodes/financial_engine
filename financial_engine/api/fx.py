@@ -112,6 +112,7 @@ class FXConvert(Resource):
 @api.route("/transfer")
 class FXTransfer(Resource):
     @api.expect(fx_transfer_request)
+    @api.doc(params={"Idempotency-Key": {"in": "header", "description": "Unique key to ensure idempotent processing", "required": False}})
     @api.response(201, "FX transfer completed", fx_transfer_response)
     @api.response(400, "Validation error")
     @api.response(422, "Insufficient funds")
