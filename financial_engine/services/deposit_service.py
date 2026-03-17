@@ -1,3 +1,4 @@
+import json
 import uuid
 from decimal import Decimal
 
@@ -14,6 +15,7 @@ from financial_engine.domain.events import (
     DEPOSIT_COMPLETED,
     DEPOSIT_INITIATED,
 )
+from financial_engine.domain.exceptions import TransactionNotFoundError, InvalidTransactionStateError
 
 
 # The platform clearing account is a special internal account
@@ -89,14 +91,11 @@ class DepositService:
         """Confirm a deposit (called when webhook confirms payment)."""
         txn = db.session.get(Transaction, transaction_id)
         if not txn:
-            from financial_engine.domain.exceptions import TransactionNotFoundError
             raise TransactionNotFoundError(transaction_id)
 
         if txn.status != "PENDING":
-            from financial_engine.domain.exceptions import InvalidTransactionStateError
             raise InvalidTransactionStateError(transaction_id, txn.status, "SUCCESS")
 
-        import json
         meta = json.loads(txn.metadata_json) if txn.metadata_json else {}
         account_id = meta.get("account_id")
 
