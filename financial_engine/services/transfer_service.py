@@ -34,7 +34,9 @@ class TransferService:
         correlation_id: str | None = None,
     ) -> Transaction:
         """Phase 1: Reserve funds (create PENDING debit on sender)."""
-        sender = db.session.get(Account, sender_account_id)
+        # Pessimistic lock: SELECT ... FOR UPDATE prevents concurrent transfers
+        # from reading stale balances on the same sender account.
+        sender = db.session.query(Account).filter_by(id=sender_account_id).with_for_update().first()
         if not sender:
             raise AccountNotFoundError(sender_account_id)
 
@@ -120,7 +122,7 @@ class TransferService:
                 transaction_id, "NO_PENDING_DEBIT", "SUCCESS"
             )
 
-        sender = db.session.get(Account, debit_entry.account_id)
+        sender = db.session.query(Account).filter_by(id=debit_entry.account_id).with_for_update().first()
 
         # Determine receiver from transaction metadata or entries
         # For transfers, we need to know the receiver; store it during initiation
@@ -206,7 +208,7 @@ class TransferService:
         correlation_id: str | None = None,
     ) -> Transaction:
         """Single-phase atomic transfer (both entries at once)."""
-        sender = db.session.get(Account, sender_account_id)
+        sender = db.session.query(Account).filter_by(id=sender_account_id).with_for_update().first()
         if not sender:
             raise AccountNotFoundError(sender_account_id)
 

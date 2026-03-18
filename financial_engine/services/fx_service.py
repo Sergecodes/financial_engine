@@ -52,7 +52,7 @@ class FXService:
         correlation_id: str | None = None,
     ) -> Transaction:
         """Cross-currency transfer through FX pool. Ledger still balances to zero."""
-        sender = db.session.get(Account, sender_account_id)
+        sender = db.session.query(Account).filter_by(id=sender_account_id).with_for_update().first()
         if not sender:
             raise AccountNotFoundError(sender_account_id)
 

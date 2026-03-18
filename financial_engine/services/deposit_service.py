@@ -99,7 +99,7 @@ class DepositService:
         meta = json.loads(txn.metadata_json) if txn.metadata_json else {}
         account_id = meta.get("account_id")
 
-        account = db.session.get(Account, account_id)
+        account = db.session.query(Account).filter_by(id=account_id).with_for_update().first()
         if not account:
             raise AccountNotFoundError(account_id)
 

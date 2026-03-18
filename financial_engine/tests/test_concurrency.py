@@ -7,9 +7,10 @@ from financial_engine.tests import deposit_funds
 class TestConcurrency:
     """Tests for concurrency safety and race conditions.
 
-    Note: True pessimistic locking (SELECT FOR UPDATE) requires PostgreSQL.
-    SQLite in-memory doesn't provide row-level locks. These tests verify
-    sequential safety and document the concurrency contract.
+    Note: SELECT FOR UPDATE is used in services for pessimistic locking.
+    PostgreSQL enforces true row-level locks; SQLite serializes writes
+    at the file level, so concurrent threads may still hit database-locked
+    errors rather than blocking cleanly.
     """
 
     def test_concurrent_transfers_do_not_create_negative_balance(
@@ -17,9 +18,10 @@ class TestConcurrency:
     ):
         """Two simultaneous transfers exceeding balance must not both succeed.
 
-        With SQLite, both may succeed due to lack of row-level locking.
-        The assertion verifies the balance is never negative regardless.
-        In production with PostgreSQL + SELECT FOR UPDATE, only one succeeds.
+        Services use SELECT FOR UPDATE for pessimistic locking.
+        With PostgreSQL, only one transfer succeeds; the other sees
+        updated balance and is rejected.  SQLite serializes at the file
+        level, which may cause database-locked errors instead.
         """
         deposit_funds(client, alice_account, 100)
 
